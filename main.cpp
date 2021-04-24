@@ -113,7 +113,7 @@ public:
     nb: Number of barrel objects
     ns: Number of sandbag objects
     */
-    bool checkCollision(Barrel *barrels, Sandbag *sandbags, int nb, int ns);
+    bool checkCollision(WalkDirection dir, Barrel *barrels, Sandbag *sandbags, int nb, int ns);
 
     /*
     @brief
@@ -236,6 +236,94 @@ void Player::init(sf::RenderWindow *window, std::string textBasePath, int numTex
     sprite.setPosition(pos.x,pos.y);
 }
 
+bool Player::checkCollision(WalkDirection dir, Barrel *barrels, Sandbag *sandbags, int nb, int ns)
+{
+    if(dir == Up)
+    {
+        for (int i = 0; i < nb; i++)
+        {
+            if(pos.x > barrels[i].getPosition().x - 55 && pos.x < (barrels[i].getPosition().x + 20 ) )
+            {
+                if(barrels[i].getPosition().y + 25 > pos.y && barrels[i].getPosition().y < pos.y)
+                    return true;
+            }
+        }
+
+        for (int i = 0; i < ns; i++)
+        {
+            if(pos.x > sandbags[i].getPosition().x - 55 && pos.x < (sandbags[i].getPosition().x + 30 ) )
+            {
+                if(sandbags[i].getPosition().y + 35 > pos.y && sandbags[i].getPosition().y < pos.y)
+                    return true;
+            }
+        }
+        return false;
+    }
+    else if(dir == Right)
+    {
+        for (int i = 0; i < nb; i++)
+        {
+            if(pos.y > barrels[i].getPosition().y - 70 && pos.y < (barrels[i].getPosition().y + 15 ) )
+            {
+                if(barrels[i].getPosition().x - 70 < pos.x && barrels[i].getPosition().x > pos.x)
+                    return true;
+            }
+        }
+
+        for (int i = 0; i < ns; i++)
+        {
+            if(pos.y > sandbags[i].getPosition().y - 70 && pos.y < (sandbags[i].getPosition().y + 20 ) )
+            {
+                if(sandbags[i].getPosition().x - 80 < pos.x && sandbags[i].getPosition().x > pos.x)
+                    return true;
+            }
+        }
+        return false;
+    }
+    else if(dir == Left)
+    {
+        for (int i = 0; i < nb; i++)
+        {
+            if(pos.y > barrels[i].getPosition().y - 70 && pos.y < (barrels[i].getPosition().y + 15 ) )
+            {
+                if(barrels[i].getPosition().x + 40 > pos.x && barrels[i].getPosition().x < pos.x)
+                    return true;
+            }
+        }
+
+        for (int i = 0; i < ns; i++)
+        {
+            if(pos.y > sandbags[i].getPosition().y - 70 && pos.y < (sandbags[i].getPosition().y + 20 ) )
+            {
+                if(sandbags[i].getPosition().x + 40 > pos.x && sandbags[i].getPosition().x < pos.x)
+                    return true;
+            }
+        }
+        return false;
+    }
+    else //dir == Down
+    {
+        for (int i = 0; i < nb; i++)
+        {
+            if(pos.x > barrels[i].getPosition().x - 55 && pos.x < (barrels[i].getPosition().x + 20 ) )
+            {
+                if(barrels[i].getPosition().y - 80 < pos.y && barrels[i].getPosition().y > pos.y)
+                    return true;
+            }
+        }
+
+        for (int i = 0; i < ns; i++)
+        {
+            if(pos.x > sandbags[i].getPosition().x - 55 && pos.x < (sandbags[i].getPosition().x + 30 ) )
+            {
+                if(sandbags[i].getPosition().y - 80 < pos.y && sandbags[i].getPosition().y > pos.y)
+                    return true;
+            }
+        }
+        return false;
+    }
+}
+
 void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sandbags, int nb, int ns)
 {
     switch (state)
@@ -245,13 +333,19 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
         {
             state = 8;
             sprite.setTexture(textures[state]);
+            if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+                return;
             sprite.move(0,-speed);
+            pos.y -= speed;
         }
         else if(dir == Up && s==0)
         {
             state = 7;
             sprite.setTexture(textures[state]);
+            if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+                return;              
             sprite.move(0,-speed);
+            pos.y -= speed;
         }
         else if(dir == Right || dir == Down) //turn clockwise
         {
@@ -283,13 +377,19 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
         {
             state = 9;
             sprite.setTexture(textures[state]);
+            if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+                return;
             sprite.move(speed,0);
+            pos.x += speed;
         }
         else if(dir == Right && s==0)
         {
             state = 10;
             sprite.setTexture(textures[state]);
+            if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+                return;            
             sprite.move(speed,0);
+            pos.x += speed;
         }
         else if(dir == Left || dir == Down) //turn clockwise
         {
@@ -322,13 +422,19 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
         {
             state = 3;
             sprite.setTexture(textures[state]);
+            if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+                return;            
             sprite.move(0,speed);
+            pos.y += speed;
         }
         else if(dir == Down && s == 1)
         {
             state = 11;
             sprite.setTexture(textures[state]);
+            if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+                return;            
             sprite.move(0,speed);
+            pos.y += speed;
         }
         else if(dir == Left || dir == Up) //turn clockwise
         {
@@ -360,13 +466,19 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
         {
             state = 13;
             sprite.setTexture(textures[state]);
+            if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+                return;
             sprite.move(-speed,0);
+            pos.x -= speed;
         }
         else if(dir == Left && s == 1)
         {
             state = 12;
             sprite.setTexture(textures[state]);
+            if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+                return;            
             sprite.move(-speed,0);
+            pos.x -= speed;
         }
         else if(dir == Up || dir == Right) //turn clockwise
         {
@@ -386,7 +498,10 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
         {
             state = 0;
             sprite.setTexture(textures[state]);
-            sprite.move(0,-speed);            
+            if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+                return;           
+            sprite.move(0,-speed);
+            pos.y -= speed;
         }
         else if(dir == Right)
         {
@@ -404,42 +519,60 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
         state = 0;
         s = 0;
         sprite.setTexture(textures[state]);
+        if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+            return;       
         sprite.move(0,-speed);
+        pos.y -= speed;
         break;
 
     case 9:
         state = 2;
         s = 0;
         sprite.setTexture(textures[state]);
+        if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+            return;        
         sprite.move(speed,0);
+        pos.x += speed;
         break;
 
     case 10:
         state = 2;
         s = 1;
         sprite.setTexture(textures[state]);
-        sprite.move(speed,0);    
+        if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+            return;        
+        sprite.move(speed,0);
+        pos.x += speed; 
         break;
 
     case 11:
         state = 4;
         s = 0;
         sprite.setTexture(textures[state]);
-        sprite.move(0,speed);    
+        if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+            return;        
+        sprite.move(0,speed);
+        pos.y += speed;  
         break;
 
     case 12:
         state = 6;
         s = 0;
         sprite.setTexture(textures[state]);
-        sprite.move(-speed,0);    
+        if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+            return;        
+        sprite.move(-speed,0);
+        pos.x -= speed;
         break;
 
     case 13:
         state = 6;
         s = 1;
         sprite.setTexture(textures[state]);
-        sprite.move(-speed,0);       
+        if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+            return;        
+        sprite.move(-speed,0);
+        pos.x -= speed;
         break;                                                
     default:
         break;
@@ -516,7 +649,6 @@ void Game::initWarzone()
             //generate random coordinates
             int coord_x = random_width(gen);
             int coord_y = random_height(gen);
-            std::cout << coord_x << " " << coord_y << std::endl;
             //convert coordinates to an array index
             int array_index = coord_y == 0 ? object_grid_width*coord_y + coord_x : object_grid_width*(coord_y-1) + coord_x;
             //check if the generated coordinate is full
@@ -536,7 +668,6 @@ void Game::initWarzone()
         {
             int coord_x = random_width(gen);
             int coord_y = random_height(gen);
-            std::cout << coord_x << " " << coord_y << std::endl;
             int array_index = coord_y == 0 ? object_grid_width*coord_y + coord_x : object_grid_width*(coord_y-1) + coord_x;
             if(object_grid[array_index] != 1)
             {
@@ -552,7 +683,6 @@ void Game::initWarzone()
     {
         int coord_x = random_width(gen);
         int coord_y = random_height(gen);
-        std::cout << coord_x << " " << coord_y << std::endl;
         int array_index = coord_y == 0 ? object_grid_width*coord_y + coord_x : object_grid_width*(coord_y-1) + coord_x;
         if(object_grid[array_index] != 1)
         {
@@ -601,13 +731,13 @@ void Game::update()
             else if(event.type == sf::Event::KeyPressed)
             {
                 if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-                    players[0].walk(3,players[0].Up,nullptr,nullptr,0,0);
+                    players[0].walk(3,players[0].Up,barrels,sandbags,numBarrels,numSandbags);
                 else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-                    players[0].walk(3,players[0].Down,nullptr,nullptr,0,0);
+                    players[0].walk(3,players[0].Down,barrels,sandbags,numBarrels,numSandbags);
                 else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-                    players[0].walk(3,players[0].Right,nullptr,nullptr,0,0);
+                    players[0].walk(3,players[0].Right,barrels,sandbags,numBarrels,numSandbags);
                 else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-                    players[0].walk(3,players[0].Left,nullptr,nullptr,0,0);
+                    players[0].walk(3,players[0].Left,barrels,sandbags,numBarrels,numSandbags);
             }
         }
         window->clear();
