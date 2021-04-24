@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <random>
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
 
@@ -162,6 +163,8 @@ public:
     Game(float s, int w, int h, int nb, int ns, int np);
     ~Game();
 
+    //initialize war zone
+    void initWarzone();
     //Draws game background
     void drawBackground();
     //Draws all objects and updates screen    
@@ -457,7 +460,7 @@ Game::Game(float s, int w, int h, int nb, int ns, int np)
     numSandbags = ns;
     numPlayers = np;
 
-    window = new sf::RenderWindow(sf::VideoMode(700, 700), "Battlefield 3");
+    window = new sf::RenderWindow(sf::VideoMode(width, height), "Battlefield 3");
     bgTexture.loadFromFile("textures/grass.png");
     bgSprite.setTexture(bgTexture);
 
@@ -474,84 +477,158 @@ Game::~Game()
     delete[] players;
 }
 
-void Game::drawBackground()
+void Game::initWarzone()
 {
+    //draw grasses
     for (int i = 0; i < width; i+=350)
     {
-        for (int j = 0; i < height; j+=350)
+        for (int j = 0; j < height; j+=350)
         {
             bgSprite.setPosition(i,j);
             window->draw(bgSprite);
         }
     }
     window->display();
+
+    //create a grid for possible object locations
+    int object_grid_width = width/60;
+    int object_grid_height = height/92;
+    int object_grid_size = object_grid_height * object_grid_width;
+    int *object_grid = new int[object_grid_size]; //2d array, 0 means the cell is empty, 1 means the cell is full.
+    for (int i = 0; i < object_grid_size; i++)
+    {
+        object_grid[i] = 0;
+    }
+    
+    //mt19937 engine for generating random cell coordinates. rand() would also work,
+    //but this is C++ way of doing it.
+    std::random_device rd{};
+    std::mt19937 gen{rd()};
+
+    std::uniform_int_distribution<int> random_width(0, object_grid_width-1);
+    std::uniform_int_distribution<int> random_height(0, object_grid_height-1);
+
+    //randomly spawn sandbags across the field.
+    for (int i = 0; i < numSandbags; i++)
+    {
+        while (1)
+        {
+            //generate random coordinates
+            int coord_x = random_width(gen);
+            int coord_y = random_height(gen);
+            std::cout << coord_x << " " << coord_y << std::endl;
+            //convert coordinates to an array index
+            int array_index = coord_y == 0 ? object_grid_width*coord_y + coord_x : object_grid_width*(coord_y-1) + coord_x;
+            //check if the generated coordinate is full
+            if(object_grid[array_index] != 1)
+            {
+                sandbags[i].init(window,"textures/bags.png",Coord(60*coord_x,92*coord_y));
+                sandbags[i].paint();
+                object_grid[array_index] = 1;
+                break;
+            }            
+        }
+    }
+    //randomly spawn barrels across the field. identical to sandbag algorithm.
+    for (int i = 0; i < numBarrels; i++)
+    {
+        while(1)
+        {
+            int coord_x = random_width(gen);
+            int coord_y = random_height(gen);
+            std::cout << coord_x << " " << coord_y << std::endl;
+            int array_index = coord_y == 0 ? object_grid_width*coord_y + coord_x : object_grid_width*(coord_y-1) + coord_x;
+            if(object_grid[array_index] != 1)
+            {
+                barrels[i].init(window,"textures/barrel.png",Coord(60*coord_x,92*coord_y));
+                barrels[i].paint();
+                object_grid[array_index] = 1;
+                break;
+            }
+        }
+    }
+
+    while(1)
+    {
+        int coord_x = random_width(gen);
+        int coord_y = random_height(gen);
+        std::cout << coord_x << " " << coord_y << std::endl;
+        int array_index = coord_y == 0 ? object_grid_width*coord_y + coord_x : object_grid_width*(coord_y-1) + coord_x;
+        if(object_grid[array_index] != 1)
+        {
+            players[0].init(window,"textures",14,Coord(60*coord_x,92*coord_y));
+            players[0].paint();
+            object_grid[array_index] = 1;
+            break;
+        }
+    }
+
+    window->display();
+    delete[] object_grid;    
+}
+
+void Game::drawBackground()
+{
+    for (int i = 0; i < width; i+=350)
+    {
+        for (int j = 0; j < height; j+=350)
+        {
+            bgSprite.setPosition(i,j);
+            window->draw(bgSprite);
+        }
+    }
+
+    for (int i = 0; i < numBarrels; i++)
+    {
+        barrels[i].paint();
+    }
+    
+    for (int i = 0; i < numSandbags; i++)
+    {
+        sandbags[i].paint();
+    }
+}
+
+void Game::update()
+{
+    while (window->isOpen())
+    {
+        sf::Event event;
+        while (window->pollEvent(event))
+        {
+            if (event.type == sf::Event::Closed)
+                window->close();
+            else if(event.type == sf::Event::KeyPressed)
+            {
+                if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+                    players[0].walk(3,players[0].Up,nullptr,nullptr,0,0);
+                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+                    players[0].walk(3,players[0].Down,nullptr,nullptr,0,0);
+                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
+                    players[0].walk(3,players[0].Right,nullptr,nullptr,0,0);
+                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
+                    players[0].walk(3,players[0].Left,nullptr,nullptr,0,0);
+            }
+        }
+        window->clear();
+
+        this->drawBackground();
+        players[0].paint();
+
+        window->display();
+        sf::sleep(sf::milliseconds(100));
+    }
 }
 
 int main()
 {
-    sf::RenderWindow window(sf::VideoMode(700, 700), "Battlefield 3");
-    sf::Texture grass_texture;
-    grass_texture.loadFromFile("textures/grass.png");
-    sf::Sprite grass_sprite[4];
-    grass_sprite[0].setTexture(grass_texture);
-    grass_sprite[1].setTexture(grass_texture);
-    grass_sprite[2].setTexture(grass_texture);
-    grass_sprite[3].setTexture(grass_texture);
-    grass_sprite[1].setPosition(350,0);
-    grass_sprite[2].setPosition(350,350);
-    grass_sprite[3].setPosition(0,350);
-
-    std::string sandbag_path = "textures/bags.png";
-    std::string barrel_path = "textures/barrel.png";
-    Sandbag s1,s2,s3,s4;
-    s1.init(&window,sandbag_path,Coord(13,13));
-    s2.init(&window,sandbag_path,Coord(600,75));
-    s3.init(&window,sandbag_path,Coord(223,432));
-    s4.init(&window,sandbag_path,Coord(500,198));
-    Barrel b1,b2,b3,b4;
-    b1.init(&window,barrel_path,Coord(79,67));
-    b2.init(&window,barrel_path,Coord(350,75));
-    b3.init(&window,barrel_path,Coord(444,432));
-    b4.init(&window,barrel_path,Coord(139,550));
-    Player p1;
-    p1.init(&window,"textures",14,Coord(350,350));
-    while (window.isOpen())
-    {
-        sf::Event event;
-        while (window.pollEvent(event))
-        {
-            if (event.type == sf::Event::Closed)
-                window.close();
-            else if(event.type == sf::Event::KeyPressed)
-            {
-                if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-                    p1.walk(3,p1.Up,nullptr,nullptr,0,0);
-                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-                    p1.walk(3,p1.Down,nullptr,nullptr,0,0);
-                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-                    p1.walk(3,p1.Right,nullptr,nullptr,0,0);
-                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-                    p1.walk(3,p1.Left,nullptr,nullptr,0,0);
-            }
-                
-        }
-
-        window.clear();
-        window.draw(grass_sprite[0]);
-        window.draw(grass_sprite[1]);
-        window.draw(grass_sprite[2]);
-        window.draw(grass_sprite[3]);
-        s1.paint();
-        s2.paint();
-        s3.paint();
-        s4.paint();
-        b1.paint();
-        b2.paint();
-        b3.paint();
-        b4.paint();
-        p1.paint();
-        window.display();
-        sf::sleep(sf::milliseconds(100));
-    }
+    Game mygame(100,1024,768,10,10,1);
+    mygame.initWarzone();
+    mygame.update();
+    //sf::sleep(sf::seconds(5));
     return 0;   
 }
+
+//compile commmand
+//g++ main.cpp -lsfml-graphics -lsfml-window -lsfml-system
+
