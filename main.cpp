@@ -713,13 +713,13 @@ void Game::update()
             else if(event.type == sf::Event::KeyPressed)
             {
                 if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-                    players[0].walk(3,players[0].Up,barrels,sandbags,numBarrels,numSandbags);
+                    players[0].walk(speed,players[0].Up,barrels,sandbags,numBarrels,numSandbags);
                 else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-                    players[0].walk(3,players[0].Down,barrels,sandbags,numBarrels,numSandbags);
+                    players[0].walk(speed,players[0].Down,barrels,sandbags,numBarrels,numSandbags);
                 else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-                    players[0].walk(3,players[0].Right,barrels,sandbags,numBarrels,numSandbags);
+                    players[0].walk(speed,players[0].Right,barrels,sandbags,numBarrels,numSandbags);
                 else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-                    players[0].walk(3,players[0].Left,barrels,sandbags,numBarrels,numSandbags);
+                    players[0].walk(speed,players[0].Left,barrels,sandbags,numBarrels,numSandbags);
             }
         }
         window->clear();
@@ -737,7 +737,8 @@ int main()
     //The program should draw the background with no trouble.
     //However, if you choose very large numbers for objects, the program might not start because it might
     //not be able to find an empty cell for every object.
-    Game mygame(100,1024,768,10,10,1);
+    //You can play with the speed, but I found "3" to be working well.
+    Game mygame(3,1024,768,10,10,1);
     mygame.initWarzone(); //determine locations for objects
     mygame.update(); //main game loop
     return 0;   
