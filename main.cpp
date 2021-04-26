@@ -150,6 +150,7 @@ public:
     ~Game();
 
     //Draws game background, which includes the grasses, sandbags and barrels.
+    //initWarzone() must be called before calling this function!
     void drawBackground();
     //initializes war zone by determining locations for objects. this function does not draw objects!
     void initWarzone();
@@ -226,8 +227,10 @@ bool Player::checkCollision(WalkDirection dir, Barrel *barrels, Sandbag *sandbag
 {
     if(dir == Up)
     {
+        //check collision with barrels
         for (int i = 0; i < nb; i++)
         {
+            //check if we are colliding with the barrel. we first check the x-axis, then the y-axis.
             if(pos.x > barrels[i].getPosition().x - 55 && pos.x < (barrels[i].getPosition().x + 20 ) )
             {
                 if(barrels[i].getPosition().y + 25 > pos.y && barrels[i].getPosition().y < pos.y)
@@ -235,8 +238,10 @@ bool Player::checkCollision(WalkDirection dir, Barrel *barrels, Sandbag *sandbag
             }
         }
 
+        //check collision with sandbags
         for (int i = 0; i < ns; i++)
         {
+            //check if we are colliding with the sandbag. we first check the x-axis, then the y-axis.
             if(pos.x > sandbags[i].getPosition().x - 55 && pos.x < (sandbags[i].getPosition().x + 30 ) )
             {
                 if(sandbags[i].getPosition().y + 35 > pos.y && sandbags[i].getPosition().y < pos.y)
@@ -245,6 +250,7 @@ bool Player::checkCollision(WalkDirection dir, Barrel *barrels, Sandbag *sandbag
         }
         return false;
     }
+    //Likewise for the other directions... You can play with the numbers to tweak the hitbox of the objects.
     else if(dir == Right)
     {
         for (int i = 0; i < nb; i++)
@@ -312,6 +318,7 @@ bool Player::checkCollision(WalkDirection dir, Barrel *barrels, Sandbag *sandbag
 
 void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sandbags, int nb, int ns)
 {
+    //State machine for the soldier, exactly as shown in the document.
     switch (state)
     {
     case 0:
@@ -580,8 +587,7 @@ Game::Game(float s, int w, int h, int nb, int ns, int np)
     numPlayers = np;
 
     window = new sf::RenderWindow(sf::VideoMode(width, height), "Battlefield 3");
-    window->setFramerateLimit(10);
-    //window->setVerticalSyncEnabled(true);
+    window->setFramerateLimit(10); //Set frame limit to prevent soldier from sliding while walking
     bgTexture.loadFromFile("textures/grass.png");
     bgSprite.setTexture(bgTexture);
 
@@ -600,14 +606,14 @@ Game::~Game()
 
 void Game::initWarzone()
 {
-    //create a grid for possible object locations
+    //create a grid for possible object locations. each object has a size of 60x92, approximately.
     int object_grid_width = width/60;
     int object_grid_height = height/92;
     int object_grid_size = object_grid_height * object_grid_width;
     int *object_grid = new int[object_grid_size]; //2d array, 0 means the cell is empty, 1 means the cell is full.
     for (int i = 0; i < object_grid_size; i++)
     {
-        object_grid[i] = 0;
+        object_grid[i] = 0; //all cells in the grid are initally empty...
     }
     
     //mt19937 engine for generating random cell coordinates. rand() would also work,
@@ -654,6 +660,7 @@ void Game::initWarzone()
         }
     }
 
+    //randomly spawn the soldier accross the field.
     while(1)
     {
         int coord_x = random_width(gen);
@@ -667,11 +674,12 @@ void Game::initWarzone()
         }
     }
     window->display();
-    delete[] object_grid;    
+    delete[] object_grid; //don't forget to free the memory.
 }
 
 void Game::drawBackground()
 {
+    //draw grasses
     for (int i = 0; i < width; i+=350)
     {
         for (int j = 0; j < height; j+=350)
@@ -680,12 +688,12 @@ void Game::drawBackground()
             window->draw(bgSprite);
         }
     }
-
+    //draw barrels
     for (int i = 0; i < numBarrels; i++)
     {
         barrels[i].paint();
     }
-    
+    //draw sandbags
     for (int i = 0; i < numSandbags; i++)
     {
         sandbags[i].paint();
@@ -694,6 +702,7 @@ void Game::drawBackground()
 
 void Game::update()
 {
+    //main game loop
     while (window->isOpen())
     {
         sf::Event event;
@@ -719,18 +728,21 @@ void Game::update()
         players[0].paint();
 
         window->display();
-        //sf::sleep(sf::milliseconds(500));
     }
 }
 
 int main()
 {
+    //You can choose arbitrary window size, and arbitrary numbers of sandbags and barrels.
+    //The program should draw the background with no trouble.
+    //However, if you choose very large numbers for objects, the program might not start because it might
+    //not be able to find an empty cell for every object.
     Game mygame(100,1024,768,10,10,1);
-    mygame.initWarzone();
-    mygame.update();
+    mygame.initWarzone(); //determine locations for objects
+    mygame.update(); //main game loop
     return 0;   
 }
 
-//compile commmand
+//compile commmand for linux
 //g++ main.cpp -lsfml-graphics -lsfml-window -lsfml-system
 
