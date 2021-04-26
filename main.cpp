@@ -22,24 +22,18 @@ public:
 
     /*
     @brief
-    Initializes a sandbag object
+        Initializes a sandbag object
     @params
-    window: SFML window object
-    texturePath: This is the path to the sandbag texture file
-    pos: Sandbag position
+        window: SFML window object
+        texturePath: This is the path to the sandbag texture file
+        pos: Sandbag position
     */
     void init(sf::RenderWindow *window, std::string texturePath, Coord pos);
 
-    /*
-    @brief
-    Returns sandbag position
-    */
+    //Returns sandbag position
     Coord getPosition();
 
-    /*
-    @brief
-    Draws the sandbag sprite
-    */
+    //Draws the sandbag sprite
     void paint();
 };
 
@@ -53,24 +47,18 @@ public:
 
     /*
     @brief
-    Initializes a barrel object
+        Initializes a barrel object
     @params
-    window: SFML window object
-    texturePath: This is the path to the barrel texture file
-    pos: Barrel position
+        window: SFML window object
+        texturePath: This is the path to the barrel texture file
+        pos: Barrel position
     */
     void init(sf::RenderWindow *window, std::string texturePath, Coord pos);
 
-    /*
-    @brief
-    Returns barrel position
-    */
+    //Returns barrel position
     Coord getPosition();
 
-    /*
-    @brief
-    Draws the barrel sprite
-    */
+    //Draws the barrel sprite
     void paint();
 };
 
@@ -87,50 +75,47 @@ public:
     enum WalkDirection {Left,Up,Right,Down};
     /*
     @brief
-    Initializes player object
+        Initializes player object
     @params
-    window: SFML window object
-    textBasePath: This is the path to the folder that contains player textures
-    numTextures: Number of player textures (should be 14)
-    pos: Player position
+        window: SFML window object
+        textBasePath: This is the path to the folder that contains player textures
+        numTextures: Number of player textures (should be 14)
+        pos: Player position
     */
     void init(sf::RenderWindow *window, std::string textBasePath, int numTextures, Coord pos);
 
     /*
     @brief
-    Sets player position
+        Sets player position
     @params
-    pos: position
+        pos: position
     */
     void setPosition(Coord pos);
 
     /*
     @brief
-    Checks whether player collides with one of the other objects
+        Checks whether player collides with one of the other objects
     @params
-    barrels: Pointer to barrel objects
-    sandbags: Pointer to sandbag objects
-    nb: Number of barrel objects
-    ns: Number of sandbag objects
+        barrels: Pointer to barrel objects
+        sandbags: Pointer to sandbag objects
+        nb: Number of barrel objects
+        ns: Number of sandbag objects
     */
     bool checkCollision(WalkDirection dir, Barrel *barrels, Sandbag *sandbags, int nb, int ns);
 
     /*
     @brief
-    Moves the player around
+        Moves the player around
     @params
-    speed: Player movement speed (you can pick any speed unit you wish)
-    dir: One of the WalkDirection enum values (Left, Up, Right, Down)
-    barrels: Pointer to barrel objects
-    nb: Number of barrel objects
-    ns: Number of sandbag objects
+        speed: Player movement speed
+        dir: One of the WalkDirection enum values (Left, Up, Right, Down)
+        barrels: Pointer to barrel objects
+        nb: Number of barrel objects
+        ns: Number of sandbag objects
     */
     void walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sandbags, int nb, int ns);
 
-    /*
-    @brief
-    Draws the player sprite
-    */
+    //Draws the player sprite
     void paint();
 };
 
@@ -161,13 +146,14 @@ public:
         np: number of player objects 
     */
     Game(float s, int w, int h, int nb, int ns, int np);
+
     ~Game();
 
-    //initialize war zone
-    void initWarzone();
-    //Draws game background
+    //Draws game background, which includes the grasses, sandbags and barrels.
     void drawBackground();
-    //Draws all objects and updates screen    
+    //initializes war zone by determining locations for objects. this function does not draw objects!
+    void initWarzone();
+    //main game loop
     void update();
 };
 
@@ -594,6 +580,8 @@ Game::Game(float s, int w, int h, int nb, int ns, int np)
     numPlayers = np;
 
     window = new sf::RenderWindow(sf::VideoMode(width, height), "Battlefield 3");
+    window->setFramerateLimit(10);
+    //window->setVerticalSyncEnabled(true);
     bgTexture.loadFromFile("textures/grass.png");
     bgSprite.setTexture(bgTexture);
 
@@ -612,17 +600,6 @@ Game::~Game()
 
 void Game::initWarzone()
 {
-    //draw grasses
-    for (int i = 0; i < width; i+=350)
-    {
-        for (int j = 0; j < height; j+=350)
-        {
-            bgSprite.setPosition(i,j);
-            window->draw(bgSprite);
-        }
-    }
-    window->display();
-
     //create a grid for possible object locations
     int object_grid_width = width/60;
     int object_grid_height = height/92;
@@ -655,7 +632,6 @@ void Game::initWarzone()
             if(object_grid[array_index] != 1)
             {
                 sandbags[i].init(window,"textures/bags.png",Coord(60*coord_x,92*coord_y));
-                sandbags[i].paint();
                 object_grid[array_index] = 1;
                 break;
             }            
@@ -672,7 +648,6 @@ void Game::initWarzone()
             if(object_grid[array_index] != 1)
             {
                 barrels[i].init(window,"textures/barrel.png",Coord(60*coord_x,92*coord_y));
-                barrels[i].paint();
                 object_grid[array_index] = 1;
                 break;
             }
@@ -688,11 +663,9 @@ void Game::initWarzone()
         {
             players[0].init(window,"textures",14,Coord(60*coord_x,92*coord_y));
             players[0].paint();
-            object_grid[array_index] = 1;
             break;
         }
     }
-
     window->display();
     delete[] object_grid;    
 }
@@ -746,7 +719,7 @@ void Game::update()
         players[0].paint();
 
         window->display();
-        sf::sleep(sf::milliseconds(100));
+        //sf::sleep(sf::milliseconds(500));
     }
 }
 
@@ -755,7 +728,6 @@ int main()
     Game mygame(100,1024,768,10,10,1);
     mygame.initWarzone();
     mygame.update();
-    //sf::sleep(sf::seconds(5));
     return 0;   
 }
 
