@@ -121,7 +121,7 @@ public:
 
 class Game
 {
-    float speed; //Game speed (you can pick any speed unit you wish)
+    float speed; //Game speed 
     int numBarrels; //Number of barrel objects
     int numSandbags; //Number of sandbag objects
     int numPlayers; //Number of player objects
@@ -398,7 +398,16 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
 
     case 3:
         s = 1;
-        if(dir == Down || dir == Left || dir == Up) //Walk down or turn clockwise
+        if(dir == Down) //Walk down 
+        {
+            state = 4;
+            sprite.setTexture(textures[state]);
+            if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+                return;            
+            sprite.move(0,speed);
+            pos.y += speed;            
+        }
+        else if(dir == Left || dir == Up) //Turn clockwise
         {
             state = 4;
             sprite.setTexture(textures[state]);
@@ -487,7 +496,7 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
 
     case 7:
         s = 1;
-        if(dir == Up)
+        if(dir == Up) //walk up
         {
             state = 0;
             sprite.setTexture(textures[state]);
@@ -496,12 +505,12 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
             sprite.move(0,-speed);
             pos.y -= speed;
         }
-        else if(dir == Right)
+        else if(dir == Right) //turn clockwise
         {
             state = 0;
             sprite.setTexture(textures[state]);            
         }
-        else if(dir == Left || dir == Down)
+        else if(dir == Left || dir == Down) //turn counter-clockwise
         {
             state = 6;
             sprite.setTexture(textures[state]);              
@@ -512,60 +521,36 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
         state = 0;
         s = 0;
         sprite.setTexture(textures[state]);
-        if(this->checkCollision(dir,barrels,sandbags,nb,ns))
-            return;       
-        sprite.move(0,-speed);
-        pos.y -= speed;
         break;
 
     case 9:
         state = 2;
         s = 0;
         sprite.setTexture(textures[state]);
-        if(this->checkCollision(dir,barrels,sandbags,nb,ns))
-            return;        
-        sprite.move(speed,0);
-        pos.x += speed;
         break;
 
     case 10:
         state = 2;
         s = 1;
         sprite.setTexture(textures[state]);
-        if(this->checkCollision(dir,barrels,sandbags,nb,ns))
-            return;        
-        sprite.move(speed,0);
-        pos.x += speed; 
         break;
 
     case 11:
         state = 4;
         s = 0;
         sprite.setTexture(textures[state]);
-        if(this->checkCollision(dir,barrels,sandbags,nb,ns))
-            return;        
-        sprite.move(0,speed);
-        pos.y += speed;  
         break;
 
     case 12:
         state = 6;
         s = 0;
         sprite.setTexture(textures[state]);
-        if(this->checkCollision(dir,barrels,sandbags,nb,ns))
-            return;        
-        sprite.move(-speed,0);
-        pos.x -= speed;
         break;
 
     case 13:
         state = 6;
         s = 1;
         sprite.setTexture(textures[state]);
-        if(this->checkCollision(dir,barrels,sandbags,nb,ns))
-            return;        
-        sprite.move(-speed,0);
-        pos.x -= speed;
         break;                                                
     default:
         break;
@@ -738,7 +723,7 @@ int main()
     //However, if you choose very large numbers for objects, the program might not start because it might
     //not be able to find an empty cell for every object.
     //You can play with the speed, but I found "3" to be working well.
-    Game mygame(3,1024,768,10,10,1);
+    Game mygame(8,1024,768,10,10,1);
     mygame.initWarzone(); //determine locations for objects
     mygame.update(); //main game loop
     return 0;   
