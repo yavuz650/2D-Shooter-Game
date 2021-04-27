@@ -521,36 +521,78 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
         state = 0;
         s = 0;
         sprite.setTexture(textures[state]);
+        if(dir == Up) //walk up
+        {
+            if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+                return;           
+            sprite.move(0,-speed);
+            pos.y -= speed;            
+        }
         break;
 
     case 9:
         state = 2;
         s = 0;
         sprite.setTexture(textures[state]);
+        if(dir == Right) //walk right
+        {
+            if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+                return;
+            sprite.move(speed,0);
+            pos.x += speed;            
+        }
         break;
 
     case 10:
         state = 2;
         s = 1;
         sprite.setTexture(textures[state]);
+        if(dir == Right) //walk right
+        {
+            if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+                return;
+            sprite.move(speed,0);
+            pos.x += speed;            
+        }        
         break;
 
     case 11:
         state = 4;
         s = 0;
         sprite.setTexture(textures[state]);
+        if(dir == Down) //walk down
+        {
+            if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+                return;            
+            sprite.move(0,speed);
+            pos.y += speed;            
+        }
         break;
 
     case 12:
         state = 6;
         s = 0;
         sprite.setTexture(textures[state]);
+        if(dir == Left)
+        {
+            if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+                return;
+            sprite.move(-speed,0);
+            pos.x -= speed;            
+        }
         break;
 
     case 13:
         state = 6;
         s = 1;
         sprite.setTexture(textures[state]);
+        if(dir == Left)
+        {
+            if(this->checkCollision(dir,barrels,sandbags,nb,ns))
+                return;
+            sprite.move(-speed,0);
+            pos.x -= speed;            
+        }        
         break;                                                
     default:
         break;
@@ -722,8 +764,8 @@ int main()
     //The program should draw the background with no trouble.
     //However, if you choose very large numbers for objects, the program might not start because it might
     //not be able to find an empty cell for every object.
-    //You can play with the speed, but I found "3" to be working well.
-    Game mygame(8,1024,768,10,10,1);
+    //You can play with the speed, but I found "4" to be working well.
+    Game mygame(4,1024,768,10,10,1);
     mygame.initWarzone(); //determine locations for objects
     mygame.update(); //main game loop
     return 0;   
