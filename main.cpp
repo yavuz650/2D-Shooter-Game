@@ -251,7 +251,7 @@ bool Player::checkCollision(float speed, WalkDirection dir, Barrel *barrels, San
             }
         }
 
-        //check if the soldier is out of bounds. if speed is greater than 20, this may not work. 
+        //check if the soldier is out of bounds.
         return pos.y + 16 - speed < 0;
     }
     //Likewise for the other directions... You can play with the numbers to tweak the hitbox of the objects.
@@ -274,7 +274,7 @@ bool Player::checkCollision(float speed, WalkDirection dir, Barrel *barrels, San
                     return true;
             }
         }
-        //check if the soldier is out of bounds. if speed is greater than 20, this may not work. 
+        //check if the soldier is out of bounds.
         return pos.x + 90 + speed > window->getSize().x;
     }
     else if(dir == Left)
@@ -296,7 +296,7 @@ bool Player::checkCollision(float speed, WalkDirection dir, Barrel *barrels, San
                     return true;
             }
         }
-        //check if the soldier is out of bounds. if speed is greater than 20, this may not work. 
+        //check if the soldier is out of bounds.
         return pos.x - speed < 0;
     }
     else //dir == Down
@@ -318,7 +318,7 @@ bool Player::checkCollision(float speed, WalkDirection dir, Barrel *barrels, San
                     return true;
             }
         }
-        //check if the soldier is out of bounds. if speed is greater than 20, this may not work. 
+        //check if the soldier is out of bounds.
         return pos.y + 95 + speed > window->getSize().y;
     }
 }
@@ -329,7 +329,7 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
     switch (state)
     {
     case 0:
-        if(dir == Up && s==1)
+        if(dir == Up && s==1) //walk up
         {
             state = 8;
             sprite.setTexture(textures[state]);
@@ -338,7 +338,7 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
             sprite.move(0,-speed);
             pos.y -= speed;
         }
-        else if(dir == Up && s==0)
+        else if(dir == Up && s==0) //walk up
         {
             state = 7;
             sprite.setTexture(textures[state]);
@@ -373,7 +373,7 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
         break;
 
     case 2:
-        if(dir == Right && s==1)
+        if(dir == Right && s==1) //walk right
         {
             state = 9;
             sprite.setTexture(textures[state]);
@@ -382,7 +382,7 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
             sprite.move(speed,0);
             pos.x += speed;
         }
-        else if(dir == Right && s==0)
+        else if(dir == Right && s==0) //walk right
         {
             state = 10;
             sprite.setTexture(textures[state]);
@@ -427,7 +427,7 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
         break;
 
     case 4:
-        if(dir == Down && s == 0)
+        if(dir == Down && s == 0) //walk down
         {
             state = 3;
             sprite.setTexture(textures[state]);
@@ -436,7 +436,7 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
             sprite.move(0,speed);
             pos.y += speed;
         }
-        else if(dir == Down && s == 1)
+        else if(dir == Down && s == 1) //walk down
         {
             state = 11;
             sprite.setTexture(textures[state]);
@@ -471,7 +471,7 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
         break;
 
     case 6:
-        if(dir == Left && s == 0)
+        if(dir == Left && s == 0) //walk left
         {
             state = 13;
             sprite.setTexture(textures[state]);
@@ -480,7 +480,7 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
             sprite.move(-speed,0);
             pos.x -= speed;
         }
-        else if(dir == Left && s == 1)
+        else if(dir == Left && s == 1) //walk left
         {
             state = 12;
             sprite.setTexture(textures[state]);
@@ -580,7 +580,7 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
         state = 6;
         s = 0;
         sprite.setTexture(textures[state]);
-        if(dir == Left)
+        if(dir == Left) //walk left
         {
             if(this->checkCollision(speed,dir,barrels,sandbags,nb,ns))
                 return;
@@ -593,7 +593,7 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
         state = 6;
         s = 1;
         sprite.setTexture(textures[state]);
-        if(dir == Left)
+        if(dir == Left) //walk left
         {
             if(this->checkCollision(speed,dir,barrels,sandbags,nb,ns))
                 return;
