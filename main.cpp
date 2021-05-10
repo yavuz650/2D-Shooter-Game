@@ -12,53 +12,45 @@ public:
     Coord(float,float);
 };
 
-class Sandbag
+class Object
 {
+protected:
     sf::RenderWindow* window; //SFML window object
-    sf::Texture texture; //Sandbag texture
-    sf::Sprite sprite; //Sandbag sprite
-    Coord pos; //Sandbag position
+    sf::Texture texture; //Object texture
+    sf::Sprite sprite; //Object sprite
+    Coord pos; //Object position
 public:
 
     /*
     @brief
-        Initializes a sandbag object
+        Initializes an object
     @params
         window: SFML window object
-        texturePath: This is the path to the sandbag texture file
-        pos: Sandbag position
+        texturePath: This is the path to the object texture file
+        pos: Object position
     */
+    virtual void init(sf::RenderWindow *window, std::string texturePath, Coord pos) =0;
+
+    //Returns object position
+    virtual Coord getPosition() =0;
+
+    //Draws the object sprite
+    virtual void paint() =0;
+};
+
+class Sandbag: private Object
+{
+public:
     void init(sf::RenderWindow *window, std::string texturePath, Coord pos);
-
-    //Returns sandbag position
     Coord getPosition();
-
-    //Draws the sandbag sprite
     void paint();
 };
 
-class Barrel
+class Barrel: private Object
 {
-    sf::RenderWindow* window; //SFML window object
-    sf::Texture texture; //Barrel texture
-    sf::Sprite sprite; //Barrel sprite
-    Coord pos; //Barrel position
 public:
-
-    /*
-    @brief
-        Initializes a barrel object
-    @params
-        window: SFML window object
-        texturePath: This is the path to the barrel texture file
-        pos: Barrel position
-    */
     void init(sf::RenderWindow *window, std::string texturePath, Coord pos);
-
-    //Returns barrel position
     Coord getPosition();
-
-    //Draws the barrel sprite
     void paint();
 };
 
@@ -82,7 +74,7 @@ public:
         numTextures: Number of player textures (should be 14)
         pos: Player position
     */
-    void init(sf::RenderWindow *window, std::string textBasePath, int numTextures, Coord pos);
+    void init(sf::RenderWindow *window, std::string texturePath, Coord pos);
 
     /*
     @brief
@@ -210,7 +202,7 @@ void Barrel::paint()
     window->draw(sprite);
 }
 
-void Player::init(sf::RenderWindow *window, std::string textBasePath, int numTextures, Coord pos)
+void Player::init(sf::RenderWindow *window, std::string texturePath, Coord pos)
 {
     this->window = window;
     this->pos = pos;
@@ -218,7 +210,7 @@ void Player::init(sf::RenderWindow *window, std::string textBasePath, int numTex
     s = 0;
     for (int i = 0; i < 14; i++)
     {
-        std::string tmp = textBasePath + "/soldier" + std::to_string(i) + ".png";
+        std::string tmp = texturePath + "/soldier" + std::to_string(i) + ".png";
         textures[i].loadFromFile(tmp);
     }
     sprite.setTexture(textures[0]);
@@ -702,7 +694,7 @@ void Game::initWarzone()
         int array_index = coord_y == 0 ? object_grid_width*coord_y + coord_x : object_grid_width*(coord_y-1) + coord_x;
         if(object_grid[array_index] != 1)
         {
-            players[0].init(window,"textures",14,Coord(60*coord_x,92*coord_y));
+            players[0].init(window,"textures",Coord(60*coord_x,92*coord_y));
             players[0].paint();
             break;
         }
