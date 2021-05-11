@@ -29,51 +29,40 @@ public:
         texturePath: This is the path to the object texture file
         pos: Object position
     */
-    virtual void init(sf::RenderWindow *window, std::string texturePath, Coord pos) =0;
+    virtual void init(sf::RenderWindow *window, std::string texturePath, Coord pos);
 
     //Returns object position
-    virtual Coord getPosition() =0;
+    Coord getPosition();
 
     //Draws the object sprite
-    virtual void paint() =0;
-};
-
-class Sandbag: private Object
-{
-public:
-    void init(sf::RenderWindow *window, std::string texturePath, Coord pos);
-    Coord getPosition();
     void paint();
+
+    //Make this class abstract
+    virtual ~Object() =0;
 };
 
-class Barrel: private Object
+class Sandbag: public Object
 {
-public:
-    void init(sf::RenderWindow *window, std::string texturePath, Coord pos);
-    Coord getPosition();
-    void paint();
+
 };
 
-class Player
+class Barrel: public Object
+{
+
+};
+
+class Player: public Object
 {
     sf::Texture textures[14]; //Player texture array (one element per soldier state)
-    sf::Sprite sprite; //Player sprite
-    sf::RenderWindow *window; //Pointer to SFML window object
-    Coord pos; //Position of the player on screen
-    int state; //Primary state of the player (range 0-13) (see Figure 5)
-    int s; //Secondary state variable (see Figure 5)
-    
+    int state; //Primary state of the player (range 0-13)
+    int s; //Secondary state variable
 public:
-    enum WalkDirection {Left,Up,Right,Down};
-    /*
-    @brief
-        Initializes player object
-    @params
-        window: SFML window object
-        textBasePath: This is the path to the folder that contains player textures
-        numTextures: Number of player textures (should be 14)
-        pos: Player position
-    */
+    enum WalkDirection {Left,Up,Right,Down,None};
+private:
+    WalkDirection pressedDir;
+public:
+
+    //Inherited functions
     void init(sf::RenderWindow *window, std::string texturePath, Coord pos);
 
     /*
@@ -109,8 +98,8 @@ public:
     */
     void walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sandbags, int nb, int ns);
 
-    //Draws the player sprite
-    void paint();
+    WalkDirection getPressed();
+    void setPressed(WalkDirection dir);
 };
 
 class Game
@@ -164,43 +153,26 @@ Coord::Coord(float x, float y)
     this->y=y;
 }
 
-void Sandbag::init(sf::RenderWindow *window, std::string texturePath, Coord pos)
+void Object::init(sf::RenderWindow *window, std::string texturePath, Coord pos)
 {
     this->window = window;
     this->pos = pos;
     texture.loadFromFile(texturePath);
     sprite.setTexture(texture);
-    sprite.setPosition(pos.x,pos.y);
+    sprite.setPosition(pos.x,pos.y);    
 }
 
-Coord Sandbag::getPosition()
+Coord Object::getPosition()
 {
     return pos;
 }
 
-void Sandbag::paint()
+void Object::paint()
 {
-    window->draw(sprite);
+    window->draw(sprite);    
 }
 
-void Barrel::init(sf::RenderWindow *window, std::string texturePath, Coord pos)
-{
-    this->window = window;
-    this->pos = pos;
-    texture.loadFromFile(texturePath);
-    sprite.setTexture(texture);
-    sprite.setPosition(pos.x,pos.y);
-}
-
-Coord Barrel::getPosition()
-{
-    return pos;
-}
-
-void Barrel::paint()
-{
-    window->draw(sprite);
-}
+Object::~Object() {}
 
 void Player::init(sf::RenderWindow *window, std::string texturePath, Coord pos)
 {
@@ -208,6 +180,7 @@ void Player::init(sf::RenderWindow *window, std::string texturePath, Coord pos)
     this->pos = pos;
     state = 0;
     s = 0;
+    pressedDir = None;
     for (int i = 0; i < 14; i++)
     {
         std::string tmp = texturePath + "/soldier" + std::to_string(i) + ".png";
@@ -598,9 +571,14 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
     }
 }
 
-void Player::paint()
+Player::WalkDirection Player::getPressed()
 {
-    window->draw(sprite);
+    return pressedDir;
+}
+
+void Player::setPressed(WalkDirection dir)
+{
+    pressedDir = dir;
 }
 
 Game::Game(float s, int w, int h, int nb, int ns, int np)
@@ -613,7 +591,7 @@ Game::Game(float s, int w, int h, int nb, int ns, int np)
     numPlayers = np;
 
     window = new sf::RenderWindow(sf::VideoMode(width, height), "Battlefield 3");
-    window->setFramerateLimit(10); //Set frame limit to prevent soldier from sliding while walking
+    window->setFramerateLimit(12); //Set frame limit to prevent soldier from sliding while walking
     bgTexture.loadFromFile("textures/grass.png");
     bgSprite.setTexture(bgTexture);
 
@@ -687,18 +665,23 @@ void Game::initWarzone()
     }
 
     //randomly spawn the soldier accross the field.
-    while(1)
+    for (int i = 0; i < numPlayers; i++)
     {
-        int coord_x = random_width(gen);
-        int coord_y = random_height(gen);
-        int array_index = coord_y == 0 ? object_grid_width*coord_y + coord_x : object_grid_width*(coord_y-1) + coord_x;
-        if(object_grid[array_index] != 1)
+        while(1)
         {
-            players[0].init(window,"textures",Coord(60*coord_x,92*coord_y));
-            players[0].paint();
-            break;
-        }
+            int coord_x = random_width(gen);
+            int coord_y = random_height(gen);
+            int array_index = coord_y == 0 ? object_grid_width*coord_y + coord_x : object_grid_width*(coord_y-1) + coord_x;
+            if(object_grid[array_index] != 1)
+            {
+                players[i].init(window,"textures",Coord(60*coord_x,92*coord_y));
+                players[i].paint();
+                object_grid[array_index] = 1;
+                break;
+            }
+        }        
     }
+    
     window->display();
     delete[] object_grid; //don't forget to free the memory.
 }
@@ -731,27 +714,74 @@ void Game::update()
     //main game loop
     while (window->isOpen())
     {
+        for (int i = 0; i < numPlayers; i++)
+        {
+            if(players[i].getPressed() != Player::None)
+                players[i].walk(speed,players[i].getPressed(),barrels,sandbags,numBarrels,numSandbags);
+        }               
         sf::Event event;
         while (window->pollEvent(event))
         {
             if (event.type == sf::Event::Closed)
-                window->close();
-            else if(event.type == sf::Event::KeyPressed)
             {
-                if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-                    players[0].walk(speed,players[0].Up,barrels,sandbags,numBarrels,numSandbags);
-                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-                    players[0].walk(speed,players[0].Down,barrels,sandbags,numBarrels,numSandbags);
-                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-                    players[0].walk(speed,players[0].Right,barrels,sandbags,numBarrels,numSandbags);
-                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-                    players[0].walk(speed,players[0].Left,barrels,sandbags,numBarrels,numSandbags);
+                window->close();
+                return;
+            }                
+            else
+            {       
+                if(event.type == sf::Event::KeyPressed)
+                {
+                    if(players[0].getPressed() == Player::None)
+                    {
+                        if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+                            players[0].setPressed(Player::Up);
+                        else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+                            players[0].setPressed(Player::Down);
+                        else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
+                            players[0].setPressed(Player::Right);
+                        else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
+                            players[0].setPressed(Player::Left);
+                    }
+
+                    if(players[1].getPressed() == Player::None)
+                    {
+                        if(sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+                            players[1].setPressed(Player::Up);
+                        else if(sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+                            players[1].setPressed(Player::Down);
+                        else if(sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+                            players[1].setPressed(Player::Right);
+                        else if(sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+                            players[1].setPressed(Player::Left);
+                    }                  
+                }
+                else if(event.type == sf::Event::KeyReleased)
+                {
+                    if(event.key.code == sf::Keyboard::Up && players[0].getPressed() == Player::Up)
+                        players[0].setPressed(Player::None);
+                    else if(event.key.code == sf::Keyboard::Down && players[0].getPressed() == Player::Down)
+                        players[0].setPressed(Player::None);
+                    else if(event.key.code == sf::Keyboard::Right && players[0].getPressed() == Player::Right)
+                        players[0].setPressed(Player::None);
+                    else if(event.key.code == sf::Keyboard::Left && players[0].getPressed() == Player::Left)
+                        players[0].setPressed(Player::None);
+
+                    else if(event.key.code == sf::Keyboard::W && players[1].getPressed() == Player::Up)
+                        players[1].setPressed(Player::None);
+                    else if(event.key.code == sf::Keyboard::S && players[1].getPressed() == Player::Down)
+                        players[1].setPressed(Player::None);
+                    else if(event.key.code == sf::Keyboard::D && players[1].getPressed() == Player::Right)
+                        players[1].setPressed(Player::None);
+                    else if(event.key.code == sf::Keyboard::A && players[1].getPressed() == Player::Left)
+                        players[1].setPressed(Player::None);                                         
+                }
             }
         }
         window->clear();
 
         this->drawBackground();
         players[0].paint();
+        players[1].paint();
 
         window->display();
     }
@@ -764,7 +794,7 @@ int main()
     //However, if you choose very large numbers for objects, the program might not start because it might
     //not be able to find an empty cell for every object.
     //You can play with the speed, but I found "4" to be working well.
-    Game mygame(4,1024,768,20,20,1);
+    Game mygame(10,1024,768,20,20,2);
     mygame.initWarzone(); //determine locations for objects
     mygame.update(); //main game loop
     return 0;   
