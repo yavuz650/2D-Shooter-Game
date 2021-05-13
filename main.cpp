@@ -59,7 +59,7 @@ class Player: public Object
 public:
     enum WalkDirection {Left,Up,Right,Down,None};
 private:
-    WalkDirection pressedDir;
+    WalkDirection pressedDir[2];
 public:
 
     //Inherited functions
@@ -100,6 +100,7 @@ public:
 
     WalkDirection getPressed();
     void setPressed(WalkDirection dir);
+    void clearPressed(WalkDirection dir);
 };
 
 class Game
@@ -180,7 +181,8 @@ void Player::init(sf::RenderWindow *window, std::string texturePath, Coord pos)
     this->pos = pos;
     state = 0;
     s = 0;
-    pressedDir = None;
+    pressedDir[0] = None;
+    pressedDir[1] = None;
     for (int i = 0; i < 14; i++)
     {
         std::string tmp = texturePath + "/soldier" + std::to_string(i) + ".png";
@@ -573,12 +575,28 @@ void Player::walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sand
 
 Player::WalkDirection Player::getPressed()
 {
-    return pressedDir;
+    return pressedDir[0];
 }
 
 void Player::setPressed(WalkDirection dir)
 {
-    pressedDir = dir;
+    if(pressedDir[0] == None)
+        pressedDir[0] = dir;
+    else if(pressedDir[1] == None && pressedDir[0] != dir)
+        pressedDir[1] = dir;
+}
+
+void Player::clearPressed(WalkDirection dir)
+{
+    if(pressedDir[0] == dir)
+    {
+        pressedDir[0] = pressedDir[1];
+        pressedDir[1] = None;
+    }
+    else if(pressedDir[1] == dir)
+    {
+        pressedDir[1] = None;
+    }
 }
 
 Game::Game(float s, int w, int h, int nb, int ns, int np)
@@ -591,7 +609,7 @@ Game::Game(float s, int w, int h, int nb, int ns, int np)
     numPlayers = np;
 
     window = new sf::RenderWindow(sf::VideoMode(width, height), "Battlefield 3");
-    window->setFramerateLimit(12); //Set frame limit to prevent soldier from sliding while walking
+    window->setFramerateLimit(10); //Set frame limit to prevent soldier from sliding while walking
     bgTexture.loadFromFile("textures/grass.png");
     bgSprite.setTexture(bgTexture);
 
@@ -731,49 +749,43 @@ void Game::update()
             {       
                 if(event.type == sf::Event::KeyPressed)
                 {
-                    if(players[0].getPressed() == Player::None)
-                    {
-                        if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-                            players[0].setPressed(Player::Up);
-                        else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-                            players[0].setPressed(Player::Down);
-                        else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-                            players[0].setPressed(Player::Right);
-                        else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-                            players[0].setPressed(Player::Left);
-                    }
+                    if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+                        players[0].setPressed(Player::Up);
+                    if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+                        players[0].setPressed(Player::Down);
+                    if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
+                        players[0].setPressed(Player::Right);
+                    if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
+                        players[0].setPressed(Player::Left);
 
-                    if(players[1].getPressed() == Player::None)
-                    {
-                        if(sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-                            players[1].setPressed(Player::Up);
-                        else if(sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-                            players[1].setPressed(Player::Down);
-                        else if(sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-                            players[1].setPressed(Player::Right);
-                        else if(sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-                            players[1].setPressed(Player::Left);
-                    }                  
+                    if(sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+                        players[1].setPressed(Player::Up);
+                    if(sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+                        players[1].setPressed(Player::Down);
+                    if(sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+                        players[1].setPressed(Player::Right);
+                    if(sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+                        players[1].setPressed(Player::Left);          
                 }
                 else if(event.type == sf::Event::KeyReleased)
                 {
-                    if(event.key.code == sf::Keyboard::Up && players[0].getPressed() == Player::Up)
-                        players[0].setPressed(Player::None);
-                    else if(event.key.code == sf::Keyboard::Down && players[0].getPressed() == Player::Down)
-                        players[0].setPressed(Player::None);
-                    else if(event.key.code == sf::Keyboard::Right && players[0].getPressed() == Player::Right)
-                        players[0].setPressed(Player::None);
-                    else if(event.key.code == sf::Keyboard::Left && players[0].getPressed() == Player::Left)
-                        players[0].setPressed(Player::None);
+                    if(event.key.code == sf::Keyboard::Up )
+                        players[0].clearPressed(Player::Up);
+                    else if(event.key.code == sf::Keyboard::Down)
+                        players[0].clearPressed(Player::Down);
+                    else if(event.key.code == sf::Keyboard::Right)
+                        players[0].clearPressed(Player::Right);
+                    else if(event.key.code == sf::Keyboard::Left)
+                        players[0].clearPressed(Player::Left);
 
-                    else if(event.key.code == sf::Keyboard::W && players[1].getPressed() == Player::Up)
-                        players[1].setPressed(Player::None);
-                    else if(event.key.code == sf::Keyboard::S && players[1].getPressed() == Player::Down)
-                        players[1].setPressed(Player::None);
-                    else if(event.key.code == sf::Keyboard::D && players[1].getPressed() == Player::Right)
-                        players[1].setPressed(Player::None);
-                    else if(event.key.code == sf::Keyboard::A && players[1].getPressed() == Player::Left)
-                        players[1].setPressed(Player::None);                                         
+                    else if(event.key.code == sf::Keyboard::W)
+                        players[1].clearPressed(Player::Up);
+                    else if(event.key.code == sf::Keyboard::S)
+                        players[1].clearPressed(Player::Down);
+                    else if(event.key.code == sf::Keyboard::D)
+                        players[1].clearPressed(Player::Right);
+                    else if(event.key.code == sf::Keyboard::A)
+                        players[1].clearPressed(Player::Left);
                 }
             }
         }
