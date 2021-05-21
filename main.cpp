@@ -13,6 +13,7 @@ public:
     Coord(float,float);
 };
 
+//Abstract base class. Player, Barrel, Sandbag and Bullet are derived from this class.
 class Object
 {
 protected:
@@ -39,7 +40,7 @@ public:
     void paint();
 
     //Returns object sprite
-    sf::Sprite getSprite();
+    const sf::Sprite getSprite();
 
     //Make this class abstract
     virtual ~Object() =0;
@@ -52,36 +53,44 @@ class Sandbag: public Object
 
 class Barrel: public Object
 {
+    //Visibility of the barrel. 1 is visible, 0 is invisible.
     int isVisible;
 public:
+    //Inherited function
     void init(sf::RenderWindow *window, std::string texturePath, Coord pos);
-    bool getVisible();
+
+    //Returns isVisible
+    const bool getVisible();
+    //Sets isVisible
     void setVisible(bool visible);
 };
 
 class Bullet: public Object
 {
+    //Declare BulletList as friend, so it can access the "next" pointer.
     friend class BulletList;
 
-    float speed;
-    float angle;
-    Bullet *next;
+    float speed; //Speed of the bullet
+    Bullet *next; //Next bullet in the linked list
 public:
     enum TravelDirection {Left,Up,Right,Down};
 private:
-    TravelDirection dir;
+    TravelDirection dir; //Travel direction of the bullet
 public:
-
-    //Inherited functions
+    //Inherited function
     void init(sf::RenderWindow *window, std::string texturePath, Coord pos);
 
+    //Moves the sprite in the travel direction, and updates the position accordingly.
     void move();
 
+    //Sets bullet speed
     void setSpeed(float speed);
 
+    //Sets the bullet travel direction
     void setDirection(TravelDirection dir);
 
-    TravelDirection getDirection();
+    //Returns the bullet travel direction
+    const TravelDirection getDirection();
 };
 
 class Player: public Object
@@ -90,22 +99,20 @@ class Player: public Object
     int state; //Primary state of the player (range 0-13)
     int s; //Secondary state variable
     int score; //Score of the player
+    Coord initPos; //Positing at the beginning of the game. This is used when the game is restarted.
 
 public:
     enum WalkDirection {Left,Up,Right,Down,None};
 private:
+    //Input buffer. This array holds the 2 most recent pressed keys. This ensures a smoother movement,
+    //especially when changing directions.
     WalkDirection pressedDir[2];
 public:
 
     //Inherited functions
     void init(sf::RenderWindow *window, std::string texturePath, Coord pos);
 
-    /*
-    @brief
-        Sets player position
-    @params
-        pos: position
-    */
+    //Sets player position
     void setPosition(Coord pos);
 
     /*
@@ -133,30 +140,51 @@ public:
     */
     void walk(float speed, WalkDirection dir, Barrel *barrels, Sandbag *sandbags, int nb, int ns);
 
+    //Returns the current travel direction of the player, which is the first element in the pressedDir array.
     WalkDirection getPressed();
+
+    //Appends a new direction to the pressedDir array
     void setPressed(WalkDirection dir);
+
+    //Clears the direction from the pressedDir array
     void clearPressed(WalkDirection dir);
-    int getState();
-    bool canShoot();
-    int getScore(); //Returns the current score of the player
-    void incrementScore(); //Increments score of the player
+
+    //Returns the state variable
+    const int getState();
+
+    //Returns true if the soldier is in an appropriate state to shoot. A soldier can only shoot a bullet
+    //if the rifle is pointing up, down, left or right; but not diagonal.
+    const bool canShoot();
+
+    //Returns the current score of the player
+    const int getScore();
+
+    //Increments score by 1
+    void incrementScore();
 };
 
 class BulletList
 {
     sf::RenderWindow* window; //SFML window object
-    Bullet *list;
+    Bullet *list; //Head of the linked list
 public:
     BulletList(sf::RenderWindow* window);
 
+    //Adds a new bullet to the list at the given coordinate and speed.
+    //The state parameter is needed to determine if the bullet needs a 90 degree rotation.
     void add(Coord pos, int state, float speed);
 
+    //Moves every bullet in the list.
     void update();
 
+    //Paints every bullet in the list.
     void paint();
 
+    //Iterates through the linked list and check collision for every bullet. A bullet is destroyed when
+    //it collides with a sandbag, barrel or a soldier.
     void checkCollision(Player* players, Barrel* barrels, Sandbag* sandbags, int np, int nb, int ns);
 
+    //Deletes the linked list.
     ~BulletList();
 };
 
@@ -178,7 +206,7 @@ class Game
     sf::Text text; //Text object
     sf::Font font; //Font object
 
-    BulletList *bullets;
+    BulletList *bullets; //Linked list for bullets
 public:
     /*
     @brief
@@ -195,13 +223,15 @@ public:
 
     ~Game();
 
+    //Initializes war zone by determining locations for objects. this function does not draw objects!
+    void initWarzone();
+
     //Draws game background, which includes the grasses, sandbags and barrels.
     //initWarzone() must be called before calling this function!
     void drawBackground();
-    //initializes war zone by determining locations for objects. this function does not draw objects!
-    void initWarzone();
-    //main game loop
-    void update();
+
+    //Main game loop. Returns 1 when the game is restarted, returns 0 when the game needs to exit.
+    int update();
 };
 
 Coord::Coord()
@@ -230,7 +260,7 @@ Coord Object::getPosition()
     return pos;
 }
 
-sf::Sprite Object::getSprite()
+const sf::Sprite Object::getSprite()
 {
     return sprite;
 }
@@ -252,7 +282,7 @@ void Barrel::init(sf::RenderWindow *window, std::string texturePath, Coord pos)
     isVisible = 1;
 }
 
-bool Barrel::getVisible()
+const bool Barrel::getVisible()
 {
     return isVisible;
 }
@@ -270,9 +300,10 @@ void Bullet::init(sf::RenderWindow *window, std::string texturePath, Coord pos)
     sprite.setTexture(texture);
     sprite.setPosition(pos.x,pos.y);
 
+    //Direction and speed are arbitrary here. 
+    //Use setDirection and setSpeed to change them.
     dir = Left;
     speed = 0;
-    angle = 0;
     next = nullptr;
 }
 
@@ -308,11 +339,12 @@ void Bullet::setSpeed(float speed)
 void Bullet::setDirection(TravelDirection dir)
 {
     this->dir = dir;
+    //Rotate the bullet sprite if necessary.
     if(dir == TravelDirection::Left || dir == TravelDirection::Right)
         sprite.rotate(90.f);
 }
 
-Bullet::TravelDirection Bullet::getDirection()
+const Bullet::TravelDirection Bullet::getDirection()
 {
     return dir;
 }
@@ -325,7 +357,8 @@ BulletList::BulletList(sf::RenderWindow* window)
 
 void BulletList::add(Coord pos, int state, float speed)
 {
-    //Determine the bullet direction and position based on soldier's state
+    //Determine the bullet direction and position based on soldier's state.
+    //The position is determined so that the bullet comes out from the tip of the rifle.
     Bullet::TravelDirection bullet_dir;
     Coord bullet_pos;
 
@@ -354,6 +387,8 @@ void BulletList::add(Coord pos, int state, float speed)
         bullet_pos.y = pos.y + 95;
     }
 
+    //Now insert the bullet into the linked list.
+    //See if we are inserting to the head of the list.
     if(list == nullptr)
     {
         list = new Bullet;
@@ -364,11 +399,12 @@ void BulletList::add(Coord pos, int state, float speed)
     else
     {
         Bullet* tmp_ptr = list;
+        //Find the tail of the list
         while(tmp_ptr->next != nullptr)
         {
             tmp_ptr = tmp_ptr->next;
         }
-
+        //Insert to the tail.
         tmp_ptr->next = new Bullet;
         tmp_ptr = tmp_ptr->next;
         tmp_ptr->init(window,"textures/bullet.png",bullet_pos);
@@ -381,12 +417,15 @@ void BulletList::checkCollision(Player* players, Barrel* barrels, Sandbag* sandb
 {
     Bullet *current;
     Bullet *previous = nullptr;
-    sf::Rect<float> bullet_rect;
-    sf::Rect<float> object_rect;
+    //We use the sf::Rect::intersects() function to check for collision.
+    sf::Rect<float> bullet_rect; //Rectangle object for bullet
+    sf::Rect<float> object_rect; //Rectangle object for the object
 
+    //Check collision with players first.
     for (int i = 0; i < np; i++)
     {
         object_rect = players[i].getSprite().getGlobalBounds();
+        //Adjust player hitbox based on the state.
         int player_state = players[i].getState();
         if(player_state == 0)
         {
@@ -487,11 +526,12 @@ void BulletList::checkCollision(Player* players, Barrel* barrels, Sandbag* sandb
             object_rect.left += 26;
         }
 
+        //Iterate through the bullet list and check for collision with each bullet
         current = list;
         while(current != nullptr)
         {
             bullet_rect = current->sprite.getGlobalBounds();
-            if(bullet_rect.intersects(object_rect)) //delete bullet
+            if(bullet_rect.intersects(object_rect)) //delete bullet if there is collision
             {
                 if(current == list) //delete head
                 {
@@ -506,19 +546,20 @@ void BulletList::checkCollision(Player* players, Barrel* barrels, Sandbag* sandb
                     delete tmp;
                     previous->next = current;
                 }
+                //Increment score
                 if(i == 0)
                     players[1].incrementScore();
                 else
                     players[0].incrementScore();
             }
-            else
+            else //next bullet
             {
                 previous = current;
                 current = current->next;
             }
         }
     }
-
+    //Check collision with sandbags
     for (int i = 0; i < ns; i++)
     {
         object_rect = sandbags[i].getSprite().getGlobalBounds();
@@ -548,9 +589,10 @@ void BulletList::checkCollision(Player* players, Barrel* barrels, Sandbag* sandb
                 previous = current;
                 current = current->next;
             }
-        }        
+        }
     }
 
+    //Check collision with barrels.
     for (int i = 0; i < nb; i++)
     {
         object_rect = barrels[i].getSprite().getGlobalBounds();
@@ -581,9 +623,8 @@ void BulletList::checkCollision(Player* players, Barrel* barrels, Sandbag* sandb
                 previous = current;
                 current = current->next;
             }
-        }        
-    }    
-    
+        }
+    }
 }
 
 void BulletList::update()
@@ -622,6 +663,7 @@ void Player::init(sf::RenderWindow *window, std::string texturePath, Coord pos)
 {
     this->window = window;
     this->pos = pos;
+    initPos = pos;
     state = 0;
     s = 0;
     score = 0;
@@ -636,12 +678,17 @@ void Player::init(sf::RenderWindow *window, std::string texturePath, Coord pos)
     sprite.setPosition(pos.x,pos.y);
 }
 
+void Player::setPosition(Coord pos)
+{
+    this->pos = pos;
+}
+
 void Player::incrementScore()
 {
     score++;
 }
 
-int Player::getScore()
+const int Player::getScore()
 {
     return score;
 }
@@ -1053,12 +1100,12 @@ void Player::clearPressed(WalkDirection dir)
     }
 }
 
-int Player::getState()
+const int Player::getState()
 {
     return state;
 }
 
-bool Player::canShoot()
+const bool Player::canShoot()
 {
     return (state != 1 && state != 5 && state != 3 && state != 7 && state != 10 && state != 13);
 }
@@ -1199,17 +1246,20 @@ void Game::drawBackground()
     }
 }
 
-void Game::update()
+int Game::update()
 {
+    //Use clocks to add a cooldown to shooting bullets. Otherwise, players can spam bullets.
     sf::Clock clock0, clock1;
-    //main game loop
+    //Main game loop
     while (window->isOpen())
     {
+        //Move the soldiers first.
         for (int i = 0; i < numPlayers; i++)
         {
             if(players[i].getPressed() != Player::None)
                 players[i].walk(speed,players[i].getPressed(),barrels,sandbags,numBarrels,numSandbags);
         }
+        //Check for collision
         bullets->checkCollision(players,barrels,sandbags,numPlayers,numBarrels,numSandbags);
         bullets->update();
 
@@ -1218,11 +1268,14 @@ void Game::update()
         {
             if (event.type == sf::Event::Closed)
             {
-                window->close();
-                return;
+                return 0; //Return 0 to indicate that the user exited the game.
             }
             else
             {
+                //We track the KeyPressed and KeyReleased events to ensure smooth movement.
+                //When a KeyPressed event occurs, the key is inserted into the input buffer.
+                //When a KeyReleased event occurs, the key is removed from the input buffer.
+                //The first element in the input buffer determines the travel direction of the soldier.
                 if(event.type == sf::Event::KeyPressed)
                 {
                     if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
@@ -1280,7 +1333,7 @@ void Game::update()
 
         this->drawBackground();
         players[0].paint();
-        players[1].paint();      
+        players[1].paint();
         /*
          for (int i = 0; i < numPlayers; i++)
         {
@@ -1393,15 +1446,42 @@ void Game::update()
             hitbox.setFillColor(sf::Color(250, 10, 50,128));
             window->draw(hitbox);
         }*/
-        std::stringstream ss;
-        ss << "Player 1 score: " << players[0].getScore() << "\nPlayer 2 score: " << players[1].getScore();
-        std::string scoreboard = ss.str();
-        text.setString(scoreboard);
-        text.setPosition(width/2 - 140, height-70);
         bullets->paint();
-        window->draw(text);
-        window->display();
+
+        std::stringstream ss;
+        if(players[0].getScore() == 10 || players[1].getScore() == 10) //Someone won the game...
+        {
+            if(players[0].getScore() == 10) //Player 1 wins
+                ss << "Player 1 wins\nStart over? (Y/N)";
+            else //Player 2 wins
+                ss << "Player 2 wins\nStart over? (Y/N)";
+
+            std::string scoreboard = ss.str();
+            text.setPosition(width/2 - 140, height/2 - 40);
+            text.setString(scoreboard);
+            window->draw(text);
+            window->display();
+            sf::Event event;
+            while (1)
+            {
+                while(!window->pollEvent(event));
+                if(event.type == sf::Event::KeyPressed && sf::Keyboard::isKeyPressed(sf::Keyboard::N))
+                    return 0;
+                else if(event.type == sf::Event::KeyPressed && sf::Keyboard::isKeyPressed(sf::Keyboard::Y))
+                    return 1;
+            }
+        }
+        else
+        {
+            ss << "Player 1 score: " << players[0].getScore() << "\nPlayer 2 score: " << players[1].getScore();
+            std::string scoreboard = ss.str();
+            text.setPosition(width/2 - 140, height-70);
+            text.setString(scoreboard);
+            window->draw(text);
+            window->display();
+        }
     }
+    return 0;
 }
 
 int main()
@@ -1411,9 +1491,20 @@ int main()
     //However, if you choose very large numbers for objects, the program might not start because it might
     //not be able to find an empty cell for every object.
     //You can play with the speed, but I found "4" to be working well.
-    Game mygame(10,1024,768,15,15,2);
-    mygame.initWarzone(); //determine locations for objects
-    mygame.update(); //main game loop
+    Game *gameptr;
+    while (1)
+    {
+        gameptr = new Game(10,1024,768,3,3,2);
+        gameptr->initWarzone(); //determine locations for objects
+
+        if(gameptr->update())
+            delete gameptr;
+        else
+        {
+            delete gameptr;
+            break;
+        }
+    }
     return 0;
 }
 
