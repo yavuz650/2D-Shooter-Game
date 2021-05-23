@@ -1236,7 +1236,7 @@ void Game::drawBackground()
     //draw barrels
     for (int i = 0; i < numBarrels; i++)
     {
-        if(barrels[i].getVisible()) //draw a barrel only if it visible
+        if(barrels[i].getVisible()) //draw the barrel only if it is visible
             barrels[i].paint();
     }
     //draw sandbags
@@ -1457,10 +1457,11 @@ int Game::update()
                 ss << "Player 2 wins\nStart over? (Y/N)";
 
             std::string scoreboard = ss.str();
-            text.setPosition(width/2 - 140, height/2 - 40);
+            text.setPosition(width/2 - 140, height/2 - 40); //Write the text at the middle of the scren
             text.setString(scoreboard);
             window->draw(text);
             window->display();
+            //Wait for a keyboard input
             sf::Event event;
             while (1)
             {
@@ -1490,7 +1491,7 @@ int main()
     //The program should draw the background with no trouble.
     //However, if you choose very large numbers for objects, the program might not start because it might
     //not be able to find an empty cell for every object.
-    //You can play with the speed, but I found "4" to be working well.
+    //You can play with the speed, but I found "10" to be working well.
     Game *gameptr;
     while (1)
     {
@@ -1510,4 +1511,3 @@ int main()
 
 //compile commmand for linux
 //g++ main.cpp -lsfml-graphics -lsfml-window -lsfml-system
-
