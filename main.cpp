@@ -99,7 +99,7 @@ class Player: public Object
     int state; //Primary state of the player (range 0-13)
     int s; //Secondary state variable
     int score; //Score of the player
-    Coord initPos; //Positing at the beginning of the game. This is used when the game is restarted.
+    int respawnFlag; //1 if player needs to respawn, 0 if not. Basically a flag.
 
 public:
     enum WalkDirection {Left,Up,Right,Down,None};
@@ -161,6 +161,12 @@ public:
 
     //Increments score by 1
     void incrementScore();
+
+    int getRespawnFlag();
+
+    void setRespawnFlag(int val);
+
+    void respawn(int* object_grid, int object_grid_width, int object_grid_height);
 };
 
 class BulletList
@@ -207,6 +213,14 @@ class Game
     sf::Font font; //Font object
 
     BulletList *bullets; //Linked list for bullets
+
+    //Object grid for determining locations for objects. 
+    //When a soldier gets hit, it will respawn somewhere randomly
+    //Thus, we need to keep track of object locations in the map to avoid spawning on top of an object.
+    int object_grid_width;
+    int object_grid_height;
+    int object_grid_size;
+    int *object_grid;
 public:
     /*
     @brief
@@ -546,11 +560,19 @@ void BulletList::checkCollision(Player* players, Barrel* barrels, Sandbag* sandb
                     delete tmp;
                     previous->next = current;
                 }
-                //Increment score
+                //Increment score and respawn
                 if(i == 0)
+                {
                     players[1].incrementScore();
+                    players[0].setRespawnFlag(1);
+                }
+                    
                 else
+                {
                     players[0].incrementScore();
+                    players[1].setRespawnFlag(1);
+                }   
+                    
             }
             else //next bullet
             {
@@ -663,7 +685,6 @@ void Player::init(sf::RenderWindow *window, std::string texturePath, Coord pos)
 {
     this->window = window;
     this->pos = pos;
-    initPos = pos;
     state = 0;
     s = 0;
     score = 0;
@@ -1110,6 +1131,46 @@ const bool Player::canShoot()
     return (state != 1 && state != 5 && state != 3 && state != 7 && state != 10 && state != 13);
 }
 
+int Player::getRespawnFlag()
+{
+    return respawnFlag;
+}
+
+void Player::setRespawnFlag(int val)
+{
+    respawnFlag = val;
+}
+
+void Player::respawn(int* object_grid, int object_grid_width, int object_grid_height)
+{
+    //Again, mt19937 for generating random coordinates.
+    std::random_device rd{};
+    std::mt19937 gen{rd()};
+
+    std::uniform_int_distribution<int> random_width(0, object_grid_width-1);
+    std::uniform_int_distribution<int> random_height(0, object_grid_height-1);
+
+    while(1)
+    {
+        int coord_x = random_width(gen);
+        int coord_y = random_height(gen);
+        //Convert coordinates to array index
+        int array_index = coord_y == 0 ? object_grid_width*coord_y + coord_x : object_grid_width*(coord_y-1) + coord_x;
+        //See if that location is empty
+        if(object_grid[array_index] != 1)
+        {
+            //Spawn the soldier there.
+            this->pos = Coord(60*coord_x,92*coord_y);
+            sprite.setPosition(pos.x,pos.y);
+            state = 0;
+            s = 0;
+            pressedDir[0] = None;
+            pressedDir[1] = None;        
+            break;
+        }
+    }
+}
+
 Game::Game(float s, int w, int h, int nb, int ns, int np)
 {
     speed = s;
@@ -1133,6 +1194,15 @@ Game::Game(float s, int w, int h, int nb, int ns, int np)
     players = new Player[np];
 
     bullets = new BulletList(window);
+
+    object_grid_width = width/60;
+    object_grid_height = height/92;
+    object_grid_size = object_grid_height * object_grid_width;
+    object_grid = new int[object_grid_size]; //2d array, 0 means the cell is empty, 1 means the cell is full.
+    for (int i = 0; i < object_grid_size; i++)
+    {
+        object_grid[i] = 0; //all cells in the grid are initally empty...
+    }    
 }
 
 Game::~Game()
@@ -1142,20 +1212,11 @@ Game::~Game()
     delete[] barrels;
     delete[] players;
     delete bullets;
+    delete[] object_grid;
 }
 
 void Game::initWarzone()
 {
-    //create a grid for possible object locations. each object has a size of 60x92, approximately.
-    int object_grid_width = width/60;
-    int object_grid_height = height/92;
-    int object_grid_size = object_grid_height * object_grid_width;
-    int *object_grid = new int[object_grid_size]; //2d array, 0 means the cell is empty, 1 means the cell is full.
-    for (int i = 0; i < object_grid_size; i++)
-    {
-        object_grid[i] = 0; //all cells in the grid are initally empty...
-    }
-
     //mt19937 engine for generating random cell coordinates. rand() would also work,
     //but this is C++ way of doing it.
     std::random_device rd{};
@@ -1219,7 +1280,6 @@ void Game::initWarzone()
     }
 
     window->display();
-    delete[] object_grid; //don't forget to free the memory.
 }
 
 void Game::drawBackground()
@@ -1238,6 +1298,15 @@ void Game::drawBackground()
     {
         if(barrels[i].getVisible()) //draw the barrel only if it is visible
             barrels[i].paint();
+        else
+        {
+            //Remove the barrel from the object grid
+            int coord_x = (barrels[i].getPosition().x) / 60;
+            int coord_y = (barrels[i].getPosition().y) / 92;
+            //Convert coordinates to an array index
+            int array_index = coord_y == 0 ? object_grid_width*coord_y + coord_x : object_grid_width*(coord_y-1) + coord_x;
+            object_grid[array_index] = 0; 
+        }
     }
     //draw sandbags
     for (int i = 0; i < numSandbags; i++)
@@ -1330,122 +1399,21 @@ int Game::update()
             }
         }
         window->clear();
-
+        
         this->drawBackground();
-        players[0].paint();
-        players[1].paint();
-        /*
-         for (int i = 0; i < numPlayers; i++)
+        if(players[0].getRespawnFlag())
         {
-            sf::Rect<float> object_rect;
-            object_rect = players[i].getSprite().getGlobalBounds();
-            if(players[i].getState() == 0)
-            {
-                object_rect.height = 38;
-                object_rect.width = 40;
-                object_rect.top += 37;
-                object_rect.left += 25;
-            }
-
-            else if(players[i].getState() == 1)
-            {
-                object_rect.height = 38;
-                object_rect.width = 40;
-                object_rect.top += 37;
-                object_rect.left += 25;
-            }
-
-            else if(players[i].getState() == 2)
-            {
-                object_rect.height = 42;
-                object_rect.width = 37;
-                object_rect.top += 37;
-                object_rect.left += 33;
-            }
-            else if(players[i].getState() == 3)
-            {
-                object_rect.height = 36;
-                object_rect.width = 45;
-                object_rect.top += 38;
-                object_rect.left += 24;
-            }
-            else if(players[i].getState() == 4)
-            {
-                object_rect.height = 35;
-                object_rect.width = 42;
-                object_rect.top += 42;
-                object_rect.left += 26;
-            }
-            else if(players[i].getState() == 5)
-            {
-                object_rect.height = 35;
-                object_rect.width = 34;
-                object_rect.top += 42;
-                object_rect.left += 30;
-            }
-            else if(players[i].getState() == 6)
-            {
-                object_rect.height = 36;
-                object_rect.width = 36;
-                object_rect.top += 38;
-                object_rect.left += 23;
-            }
-            else if(players[i].getState() == 7)
-            {
-                object_rect.height = 37;
-                object_rect.width = 38;
-                object_rect.top += 38;
-                object_rect.left += 26;
-            }
-            else if(players[i].getState() == 8)
-            {
-                object_rect.height = 37;
-                object_rect.width = 34;
-                object_rect.top += 41;
-                object_rect.left += 27;
-            }
-            else if(players[i].getState() == 9)
-            {
-                object_rect.height = 35;
-                object_rect.width = 34;
-                object_rect.top += 43;
-                object_rect.left += 29;
-            }
-            else if(players[i].getState() == 10)
-            {
-                object_rect.height = 35;
-                object_rect.width = 33;
-                object_rect.top += 43;
-                object_rect.left += 32;
-            }
-            else if(players[i].getState() == 11)
-            {
-                object_rect.height = 33;
-                object_rect.width = 33;
-                object_rect.top += 42;
-                object_rect.left += 31;
-            }
-            else if(players[i].getState() == 12)
-            {
-                object_rect.height = 34;
-                object_rect.width = 37;
-                object_rect.top += 39;
-                object_rect.left += 26;
-            }
-            else if(players[i].getState() == 13)
-            {
-                object_rect.height = 34;
-                object_rect.width = 37;
-                object_rect.top += 39;
-                object_rect.left += 26;
-            }
-
-            sf::RectangleShape hitbox;
-            hitbox.setSize(sf::Vector2f(object_rect.width,object_rect.height));
-            hitbox.setPosition(object_rect.left,object_rect.top);
-            hitbox.setFillColor(sf::Color(250, 10, 50,128));
-            window->draw(hitbox);
-        }*/
+            players[0].respawn(object_grid,object_grid_width,object_grid_height);
+            players[0].setRespawnFlag(0);
+        }
+            
+        if(players[1].getRespawnFlag())
+        {
+            players[1].respawn(object_grid,object_grid_width,object_grid_height);
+            players[1].setRespawnFlag(0);
+        }
+        players[0].paint();
+        players[1].paint();        
         bullets->paint();
 
         std::stringstream ss;
@@ -1495,7 +1463,7 @@ int main()
     Game *gameptr;
     while (1)
     {
-        gameptr = new Game(10,1024,768,3,3,2);
+        gameptr = new Game(10,1024,768,15,15,2);
         gameptr->initWarzone(); //determine locations for objects
 
         if(gameptr->update())
